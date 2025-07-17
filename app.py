@@ -1,8 +1,6 @@
-from flask import Flask, render_template, request
+import streamlit as st
 import pickle
 import numpy as np
-
-app = Flask(__name__)
 
 # Load model dan encoder
 model = pickle.load(open('model.pkl', 'rb'))
@@ -46,70 +44,72 @@ mapping_moodswings = {
     "Tinggi (Sering)": "High"
 }
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    prediction = None
-    probability = None
-    teks_bawah = None  # Tambahkan variabel teks_bawah
+# Daftar fitur yang digunakan
+features = ['Gender', 'Country', 'Occupation', 'self_employed', 'family_history',
+            'Days_Indoors', 'Growing_Stress', 'Changes_Habits', 'Mental_Health_History',
+            'Mood_Swings', 'Coping_Struggles', 'Work_Interest', 'Social_Weakness']
 
-    features = ['Gender', 'Country', 'Occupation', 'self_employed', 'family_history',
-                'Days_Indoors', 'Growing_Stress', 'Changes_Habits', 'Mental_Health_History',
-                'Mood_Swings', 'Coping_Struggles', 'Work_Interest', 'Social_Weakness']
+# Streamlit UI
+st.set_page_config(page_title="Prediksi Kesehatan Mental", layout="centered")
+st.title("Prediksi Kebutuhan Bantuan Ahli Kesehatan Mental")
 
-    if request.method == 'POST':
-        input_data = []
+with st.form("mental_health_form"):
+    gender = st.selectbox("Jenis Kelamin", list(mapping_gender.keys()))
+    country = st.selectbox("Negara", list(mapping_country.keys()))
+    occupation = st.selectbox("Pekerjaan", list(mapping_occupation.keys()))
+    self_employed = st.radio("Apakah bekerja sendiri?", list(mapping_yesno.keys()))
+    family_history = st.radio("Ada riwayat kesehatan mental dalam keluarga?", list(mapping_yesno.keys()))
+    days_indoors = st.selectbox("Berapa lama kamu di dalam rumah?", list(mapping_daysindoors.keys()))
+    growing_stress = st.radio("Apakah kamu merasa stres meningkat?", list(mapping_yesno.keys()))
+    changes_habits = st.radio("Ada perubahan kebiasaan?", list(mapping_yesno.keys()))
+    mental_health_history = st.radio("Ada riwayat kesehatan mental?", list(mapping_yesno.keys()))
+    mood_swings = st.selectbox("Perubahan suasana hati", list(mapping_moodswings.keys()))
+    coping_struggles = st.radio("Sulit mengatasi tekanan?", list(mapping_yesno.keys()))
+    work_interest = st.radio("Kehilangan minat terhadap pekerjaan?", list(mapping_yesno.keys()))
+    social_weakness = st.radio("Merasa lemah dalam hubungan sosial?", list(mapping_yesno.keys()))
+    
+    submitted = st.form_submit_button("Prediksi")
 
-        for feature in features:
-            value = request.form.get(feature)
+if submitted:
+    # Siapkan data input
+    input_data = []
 
-            # Mapping bahasa Indonesia ke English
-            if feature == "Gender":
-                value = mapping_gender.get(value, value)
-            elif feature == "Country":
-                value = mapping_country.get(value, value)
-            elif feature == "Occupation":
-                value = mapping_occupation.get(value, value)
-            elif feature in ["self_employed", "family_history", "Growing_Stress", "Changes_Habits",
-                             "Mental_Health_History", "Coping_Struggles", "Work_Interest", "Social_Weakness"]:
-                value = mapping_yesno.get(value, value)
-            elif feature == "Days_Indoors":
-                value = mapping_daysindoors.get(value, value)
-            elif feature == "Mood_Swings":
-                value = mapping_moodswings.get(value, value)
+    form_values = {
+        'Gender': mapping_gender[gender],
+        'Country': mapping_country[country],
+        'Occupation': mapping_occupation[occupation],
+        'self_employed': mapping_yesno[self_employed],
+        'family_history': mapping_yesno[family_history],
+        'Days_Indoors': mapping_daysindoors[days_indoors],
+        'Growing_Stress': mapping_yesno[growing_stress],
+        'Changes_Habits': mapping_yesno[changes_habits],
+        'Mental_Health_History': mapping_yesno[mental_health_history],
+        'Mood_Swings': mapping_moodswings[mood_swings],
+        'Coping_Struggles': mapping_yesno[coping_struggles],
+        'Work_Interest': mapping_yesno[work_interest],
+        'Social_Weakness': mapping_yesno[social_weakness],
+    }
 
-            # Encode fitur dengan LabelEncoder
-            encoder = encoders.get(feature)
-            if value in encoder.classes_:
-                encoded = encoder.transform([value])[0]
-            else:
-                encoded = 0  # fallback jika label tidak dikenal
-
-            input_data.append(encoded)
-
-        input_array = np.array([input_data])
-
-        # Prediksi dan probabilitas
-        pred_encoded = model.predict(input_array)[0]
-        proba = model.predict_proba(input_array)[0][pred_encoded] * 100
-
-        # Decode target label
-        prediction = target_encoder.inverse_transform([pred_encoded])[0]
-
-        # Buat teks_bawah sesuai prediksi
-        if prediction == "No":
-            teks_bawah = f"Tidak perlu bantuan ahli saat ini. Keyakinan model : {proba:.2f}%"
+    for feature in features:
+        value = form_values[feature]
+        encoder = encoders.get(feature)
+        if value in encoder.classes_:
+            encoded = encoder.transform([value])[0]
         else:
-            teks_bawah = f"Disarankan untuk mendapatkan bantuan ahli. Keyakinan model : {proba:.2f}%"
+            encoded = 0  # fallback jika label tidak dikenal
+        input_data.append(encoded)
 
-        # Bulatkan probabilitas untuk ditampilkan
-        probability = round(proba, 2)
+    input_array = np.array([input_data])
 
-    return render_template(
-        'index.html',
-        prediction=prediction,
-        probability=probability,
-        teks_bawah=teks_bawah
-    )
+    # Prediksi
+    pred_encoded = model.predict(input_array)[0]
+    proba = model.predict_proba(input_array)[0][pred_encoded] * 100
+    prediction = target_encoder.inverse_transform([pred_encoded])[0]
 
-if __name__ == '__main__':
-    app.run(debug=True)
+    # Output
+    st.markdown("---")
+    if prediction == "No":
+        st.success(f"Tidak perlu bantuan ahli saat ini. ✅\n\n**Keyakinan model:** {proba:.2f}%")
+    else:
+        st.error(f"Disarankan untuk mendapatkan bantuan ahli. 🧠\n\n**Keyakinan model:** {proba:.2f}%")
+
