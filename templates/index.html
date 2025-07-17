@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Mental Health Prediction</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" />
+</head>
+<body style="background-color: #f0f5f9;">
+  <div class="container mt-5">
+    <div class="card shadow">
+      <div class="card-header text-center" style="background-color: #9EC6F3; color: white;">
+        <h3>Mental Health Treatment Prediction</h3>
+      </div>
+      <div class="card-body">
+                <form method="POST">
+            {% set options_map = {
+                'Gender': ['Laki-laki', 'Perempuan', 'Lainnya'],
+                'Country': ['Indonesia', 'Negara lain'],
+                'Occupation': ['Mahasiswa', 'Karyawan', 'Freelancer', 'Wirausaha', 'Lainnya'],
+                'self_employed': ['Ya', 'Tidak'],
+                'family_history': ['Ya', 'Tidak'],
+                'Days_Indoors': ['1-14 Hari', '15-30 Hari', 'Lebih dari 30 Hari'],
+                'Growing_Stress': ['Ya', 'Tidak'],
+                'Changes_Habits': ['Ya', 'Tidak'],
+                'Mental_Health_History': ['Ya', 'Tidak'],
+                'Mood_Swings': ['Rendah (Jarang)', 'Sedang (Kadang-kadang)', 'Tinggi (Sering)'],
+                'Coping_Struggles': ['Ya', 'Tidak'],
+                'Work_Interest': ['Ya', 'Tidak'],
+                'Social_Weakness': ['Ya', 'Tidak']
+            } %}
+
+            {% set label_map = {
+                'Gender': 'Jenis Kelamin',
+                'Country': 'Negara',
+                'Occupation': 'Pekerjaan',
+                'self_employed': 'Apakah Anda wiraswasta?',
+                'family_history': 'Apakah ada riwayat kesehatan mental dalam keluarga?',
+                'Days_Indoors': 'Dalam 30 hari terakhir, berapa hari Anda rata - rata menghabiskan waktu hanya di dalam ruangan?',
+                'Growing_Stress': 'Apakah stres Anda meningkat akhir-akhir ini?',
+                'Changes_Habits': 'Apakah ada perubahan kebiasaan signifikan akhir-akhir ini?',
+                'Mental_Health_History': 'Apakah Anda memiliki riwayat kesehatan mental sebelumnya?',
+                'Mood_Swings': 'Seberapa sering Anda mengalami perubahan mood?',
+                'Coping_Struggles': 'Apakah Anda merasa kesulitan mengatasi masalah sehari-hari?',
+                'Work_Interest': 'Apakah Anda kehilangan minat terhadap pekerjaan atau studi Anda?',
+                'Social_Weakness': 'Apakah Anda menarik diri dari interaksi sosial akhir-akhir ini?'
+            } %}
+
+            {% for feature in label_map.keys() %}
+            <div class="form-group">
+                <label>{{ label_map[feature] }}</label>
+                <select class="form-control" name="{{ feature }}" required>
+                <option value="">-- Pilih --</option>
+                {% for option in options_map[feature] %}
+                <option value="{{ option }}">{{ option }}</option>
+                {% endfor %}
+                </select>
+            </div>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary btn-block">Prediksi</button>
+            </form>
+
+        {% if prediction %}
+        <div class="alert alert-info mt-4 text-center">
+        <h3>Prediksi Butuh Bantuan Ahli : {{ prediction }}</h3>
+        <p>{{ teks_bawah }}</p>
+
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</body>
+</html>
